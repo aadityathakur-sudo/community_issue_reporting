@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Report a Civic Issue - CivicPulse{% endblock %}
+
+{% block content %}
+<div class="form-card wide">
+  <h2 style="font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem;">📢 Report a Community Issue</h2>
+  <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1.8rem;">
+    Submit details about road damage, streetlights, garbage, or civic hazards. Your report will be published for neighbors to upvote and administrators to resolve.
+  </p>
+
+  <form method="POST" action="{{ url_for('report_issue') }}" enctype="multipart/form-data">
+    <!-- Issue Title -->
+    <div class="form-group">
+      <label for="title">Issue Title <span style="color: var(--danger-btn);">*</span></label>
+      <input 
+        type="text" 
+        id="title" 
+        name="title" 
+        class="form-control" 
+        placeholder="e.g. Dangerous 2ft pothole causing accidents near Metro Station" 
+        required
+      >
+      <div class="form-hint">Provide a concise, descriptive title highlighting the core problem.</div>
+    </div>
+
+    <!-- Category & Location Row -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="category">Category <span style="color: var(--danger-btn);">*</span></label>
+        <select id="category" name="category" class="form-control" required>
+          <option value="">-- Select Category --</option>
+          {% for cat in CATEGORIES %}
+            <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="location">Location / Landmark <span style="color: var(--danger-btn);">*</span></label>
+        <input 
+          type="text" 
+          id="location" 
+          name="location" 
+          class="form-control" 
+          placeholder="e.g. Outer Ring Road, opposite Pillar 42" 
+          required
+        >
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label for="description">Detailed Description <span style="color: var(--danger-btn);">*</span></label>
+      <textarea 
+        id="description" 
+        name="description" 
+        class="form-control" 
+        rows="4" 
+        placeholder="Describe how long this issue has persisted, how dangerous it is, and any safety hazards..."
+        required
+      ></textarea>
+    </div>
+
+    <!-- Image Upload for proof -->
+    <div class="form-group">
+      <label for="image">Upload Photo Proof (Optional)</label>
+      <input 
+        type="file" 
+        id="image" 
+        name="image" 
+        class="form-control" 
+        accept="image/*"
+      >
+      <div class="form-hint">Photos help authorities assess severity and locate the exact spot faster. Max 5MB.</div>
+    </div>
+
+    <!-- Interactive Map Coordinate Picker -->
+    <div class="form-group">
+      <label>Pinpoint Location on Map (Click on the map to set GPS coordinates)</label>
+      <div id="picker-map" class="map-container" style="height: 320px;"></div>
+      <div class="form-hint">Tip: Click anywhere or drag the blue marker to adjust the exact spot.</div>
+    </div>
+
+    <!-- GPS Coordinate Inputs -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="latitude">Latitude</label>
+        <input 
+          type="number" 
+          step="any" 
+          id="latitude" 
+          name="latitude" 
+          class="form-control" 
+          value="12.9716"
+        >
+      </div>
+      <div class="form-group">
+        <label for="longitude">Longitude</label>
+        <input 
+          type="number" 
+          step="any" 
+          id="longitude" 
+          name="longitude" 
+          class="form-control" 
+          value="77.5946"
+        >
+      </div>
+    </div>
+
+    <!-- Form Submit Buttons -->
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+      <button type="submit" class="btn btn-primary" style="flex: 1;">🚀 Submit Civic Report</button>
+      <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Default coordinates (Bangalore city center or customizable)
+    let defaultLat = 12.9716;
+    let defaultLng = 77.5946;
+
+    const latInput = document.getElementById("latitude");
+    const lngInput = document.getElementById("longitude");
+
+    if (latInput.value && lngInput.value) {
+      defaultLat = parseFloat(latInput.value);
+      defaultLng = parseFloat(lngInput.value);
+    }
+
+    // Initialize Leaflet Map
+    const map = L.map("picker-map").setView([defaultLat, defaultLng], 13);
+
+    // CartoDB Dark Matter tile layer for beautiful dark mode integration
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19
+    }).addTo(map);
+
+    // Draggable Marker
+    const marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+    marker.bindPopup("Drag me or click anywhere on the map!").openPopup();
+
+    function updateCoords(lat, lng) {
+      latInput.value = lat.toFixed(6);
+      lngInput.value = lng.toFixed(6);
+    }
+
+    // When marker is dragged
+    marker.on("dragend", function(e) {
+      const position = marker.getLatLng();
+      updateCoords(position.lat, position.lng);
+    });
+
+    // When map is clicked
+    map.on("click", function(e) {
+      marker.setLatLng(e.latlng);
+      updateCoords(e.latlng.lat, e.latlng.lng);
+    });
+  });
+</script>
+{% endblock %}

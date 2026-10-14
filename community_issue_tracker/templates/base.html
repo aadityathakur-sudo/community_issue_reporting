@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}CivicPulse - Community Issue Reporting Platform{% endblock %}</title>
+
+  <!-- Google Font & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet.js for Interactive Maps (Free, OpenStreetMap, No API keys required) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Custom Dark Theme Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="{{ url_for('index') }}" class="nav-brand">
+        <span class="logo-badge">🏛️ CivicPulse</span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('index') }}">Public Feed</a></li>
+          <li><a href="{{ url_for('report_issue') }}" class="btn btn-primary btn-sm">+ Report Issue</a></li>
+          
+          {% if is_logged_in and current_role == 'admin' %}
+            <li><a href="{{ url_for('admin_dashboard') }}" class="admin-pill">Admin Dashboard</a></li>
+          {% endif %}
+
+          <li class="nav-user-info">
+            {% if is_logged_in %}
+              <span class="user-badge">
+                👤 {{ current_fullname }} 
+                {% if current_role == 'admin' %}
+                  <span class="admin-pill">Admin</span>
+                {% endif %}
+              </span>
+              <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm">Log Out</a>
+            {% else %}
+              <a href="{{ url_for('login') }}" class="btn btn-secondary btn-sm">Log In</a>
+              <a href="{{ url_for('register') }}" class="btn btn-accent btn-sm">Register</a>
+            {% endif %}
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Flash Notifications -->
+  <div class="container flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Dynamic Page Content -->
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Clean Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p><strong>CivicPulse</strong> &bull; Community Issue Reporting Platform</p>
+      <p style="font-size: 0.8rem; margin-top: 0.3rem;">
+        PS 04 &bull; Student Project &bull; Powered by Python Flask, SQLite & Leaflet Maps
+      </p>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

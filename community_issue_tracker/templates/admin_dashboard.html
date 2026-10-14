@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - CivicPulse Authority Portal{% endblock %}
+
+{% block content %}
+<div style="margin: 2rem 0 1rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800;">🛡️ Municipal Admin Management Portal</h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem;">
+        Review community-reported civic issues, update repair statuses, and manage public feedback.
+      </p>
+    </div>
+    <div>
+      <a href="{{ url_for('index') }}" class="btn btn-secondary btn-sm">&larr; Public Feed View</a>
+    </div>
+  </div>
+
+  <!-- Overview Stats -->
+  <div class="stats-grid" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+    <div class="stat-card">
+      <div class="stat-value">{{ total_count }}</div>
+      <div class="stat-label">Total Reports</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color: var(--status-pending-text);">{{ pending_count }}</div>
+      <div class="stat-label">Pending Review</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color: var(--status-progress-text);">{{ in_progress_count }}</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color: var(--status-resolved-text);">{{ resolved_count }}</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+  </div>
+
+  <!-- Admin Filters -->
+  <div class="feed-controls" style="margin-bottom: 1.5rem;">
+    <form method="GET" action="{{ url_for('admin_dashboard') }}" class="filter-form">
+      <input 
+        type="text" 
+        name="search" 
+        class="form-control search-input" 
+        placeholder="Filter by issue title or street name..." 
+        value="{{ search }}"
+      >
+
+      <select name="status" class="form-control">
+        <option value="">All Statuses</option>
+        {% for s in STATUS_CHOICES %}
+          <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="category" class="form-control">
+        <option value="">All Categories</option>
+        {% for c in CATEGORIES %}
+          <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit" class="btn btn-accent">Apply Filters</button>
+      {% if search or status_filter or category_filter %}
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Issues Management Table -->
+  <div class="admin-table-container">
+    {% if issues %}
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">ID</th>
+            <th>Issue Title & Category</th>
+            <th>Location</th>
+            <th>Reporter</th>
+            <th>Votes</th>
+            <th style="width: 220px;">Manage Status</th>
+            <th style="text-align: right; width: 140px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in issues %}
+            <tr>
+              <td><span style="color: var(--text-muted); font-weight: 700;">#{{ issue.id }}</span></td>
+              <td>
+                <div style="font-weight: 700; margin-bottom: 0.2rem;">
+                  <a href="{{ url_for('issue_detail', issue_id=issue.id) }}">{{ issue.title }}</a>
+                </div>
+                <span class="category-tag">{{ issue.category }}</span>
+              </td>
+              <td>
+                <span style="color: #cbd5e1; font-size: 0.88rem;">📍 {{ issue.location }}</span>
+              </td>
+              <td>
+                <div style="font-weight: 600;">{{ issue.reporter_name }}</div>
+                <div style="color: var(--text-muted); font-size: 0.78rem;">@{{ issue.reporter_username }}</div>
+              </td>
+              <td>
+                <span style="font-weight: 700; color: var(--text-highlight);">▲ {{ issue.upvotes }}</span>
+              </td>
+              <td>
+                <form action="{{ url_for('update_status', issue_id=issue.id) }}" method="POST" style="display: flex; gap: 0.4rem; align-items: center; margin: 0;">
+                  <select name="status" class="table-status-select">
+                    {% for s in STATUS_CHOICES %}
+                      <option value="{{ s }}" {% if issue.status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-secondary btn-sm" title="Save new status">Save</button>
+                </form>
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 0.4rem;">
+                  <a href="{{ url_for('issue_detail', issue_id=issue.id) }}" class="btn btn-secondary btn-sm" title="View details & comments">
+                    View
+                  </a>
+                  <form action="{{ url_for('delete_issue', issue_id=issue.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Delete this issue?');">
+                    <button type="submit" class="btn btn-danger btn-sm" title="Delete issue">
+                      🗑️
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
+        <h3>No issues match the selected criteria.</h3>
+        <p style="margin-top: 0.5rem;">Try modifying your search or status filter.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

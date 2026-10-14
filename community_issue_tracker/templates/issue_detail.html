@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}{{ issue.title }} - CivicPulse{% endblock %}
+
+{% block content %}
+<div style="margin-top: 1.5rem; margin-bottom: 0.8rem;">
+  <a href="{{ url_for('index') }}" style="font-size: 0.9rem; color: var(--text-muted);">&larr; Back to Public Feed</a>
+</div>
+
+<div class="detail-layout">
+  <!-- Left Main Column -->
+  <div class="detail-main">
+    <div style="display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap;">
+      <span class="category-tag">{{ issue.category }}</span>
+      <span class="status-badge 
+        {% if issue.status == 'Pending' %}status-pending
+        {% elif issue.status == 'In Progress' %}status-in-progress
+        {% elif issue.status == 'Resolved' %}status-resolved
+        {% endif %}">
+        ● {{ issue.status }}
+      </span>
+      <span style="font-size: 0.82rem; color: var(--text-muted); margin-left: auto;">
+        Reported on {{ issue.created_at[:10] }} by <strong>{{ issue.reporter_name }}</strong>
+      </span>
+    </div>
+
+    <h1 style="font-size: 1.8rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem;">
+      {{ issue.title }}
+    </h1>
+
+    <!-- Photo Evidence -->
+    {% if issue.image_filename %}
+      <div>
+        <img 
+          src="{{ url_for('static', filename='uploads/' + issue.image_filename) }}" 
+          alt="Photo proof for {{ issue.title }}" 
+          class="detail-image"
+        >
+      </div>
+    {% endif %}
+
+    <!-- Full Description -->
+    <div style="margin: 1.5rem 0; font-size: 1.05rem; line-height: 1.7; color: #e2e8f0;">
+      <h3 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.5rem;">
+        Description & Hazard Details
+      </h3>
+      <p style="white-space: pre-line;">{{ issue.description }}</p>
+    </div>
+
+    <!-- Community Endorsement / Upvote Bar -->
+    <div style="background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.2rem; display: flex; align-items: center; justify-content: space-between; margin: 2rem 0; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-main);">
+          Community Priority: {{ issue.upvotes }} {% if issue.upvotes == 1 %}Upvote{% else %}Upvotes{% endif %}
+        </div>
+        <div style="font-size: 0.84rem; color: var(--text-muted);">
+          Each citizen can upvote once to help local authorities prioritize urgent repairs.
+        </div>
+      </div>
+
+      <form action="{{ url_for('upvote_issue', issue_id=issue.id) }}" method="POST" style="margin: 0;">
+        <button 
+          type="submit" 
+          class="btn {% if has_upvoted %}btn-secondary{% else %}btn-accent{% endif %}"
+          style="font-size: 1rem; padding: 0.6rem 1.4rem;"
+        >
+          {% if has_upvoted %}
+            ✓ You Endorsed This (Click to Undo)
+          {% else %}
+            ▲ Upvote & Endorse Issue
+          {% endif %}
+        </button>
+      </form>
+    </div>
+
+    <!-- Comments & Discussion Section -->
+    <section class="comments-section">
+      <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem;">
+        💬 Discussion & Official Updates ({{ comments|length }})
+      </h3>
+
+      {% if comments %}
+        {% for comment in comments %}
+          <div class="comment-card">
+            <div class="comment-header">
+              <span class="comment-author">
+                👤 {{ comment.author_name }}
+                {% if comment.author_role == 'admin' %}
+                  <span class="admin-pill">Municipal Authority</span>
+                {% endif %}
+              </span>
+              <span class="comment-time">{{ comment.created_at[:16] }}</span>
+            </div>
+            <div class="comment-body">
+              {{ comment.comment_text }}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1.5rem;">
+          No comments yet. Have more information or an update? Be the first to comment below!
+        </p>
+      {% endif %}
+
+      <!-- Add Comment Form -->
+      {% if is_logged_in %}
+        <form action="{{ url_for('add_comment', issue_id=issue.id) }}" method="POST" style="margin-top: 1.5rem;">
+          <div class="form-group">
+            <label for="comment_text">Leave a comment or resolution note:</label>
+            <textarea 
+              name="comment_text" 
+              id="comment_text" 
+              class="form-control" 
+              rows="3" 
+              placeholder="Provide eyewitness updates, repair progress, or relevant notes..."
+              required
+            ></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary">Post Comment</button>
+        </form>
+      {% else %}
+        <div style="background-color: var(--bg-input); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+          <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Please <a href="{{ url_for('login', next=request.path) }}">log in</a> to participate in the community discussion.
+          </p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  <!-- Right Sidebar -->
+  <aside class="detail-sidebar">
+    <!-- Location Card -->
+    <div class="detail-sidebar-card">
+      <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.6rem;">📍 Location Details</h4>
+      <p style="font-size: 0.92rem; color: #cbd5e1; margin-bottom: 0.6rem;">
+        {{ issue.location }}
+      </p>
+
+      {% if issue.latitude and issue.longitude %}
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem;">
+          GPS: {{ issue.latitude }}, {{ issue.longitude }}
+        </div>
+        <!-- Map Container -->
+        <div id="issue-map" class="map-container"></div>
+      {% endif %}
+    </div>
+
+    <!-- Admin Status Control Panel (Visible to Admins) -->
+    {% if is_logged_in and current_role == 'admin' %}
+      <div class="detail-sidebar-card" style="border-color: #f0883e;">
+        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.8rem; color: #f0883e;">
+          🛡️ Admin Authority Controls
+        </h4>
+        
+        <form action="{{ url_for('update_status', issue_id=issue.id) }}" method="POST">
+          <div class="form-group">
+            <label for="status" style="font-size: 0.85rem;">Update Issue Status:</label>
+            <select name="status" id="status" class="form-control" style="font-size: 0.88rem;">
+              {% for s in STATUS_CHOICES %}
+                <option value="{{ s }}" {% if issue.status == s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="admin_note" style="font-size: 0.85rem;">Public Resolution Note (Optional):</label>
+            <textarea 
+              name="admin_note" 
+              id="admin_note" 
+              class="form-control" 
+              rows="2" 
+              placeholder="e.g. Dispatched maintenance truck. Expected fix by Friday."
+              style="font-size: 0.85rem;"
+            ></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-accent btn-sm" style="width: 100%;">
+            Save Status & Post Update
+          </button>
+        </form>
+
+        <hr style="border-color: var(--border-color); margin: 1.2rem 0;">
+
+        <form action="{{ url_for('delete_issue', issue_id=issue.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this issue?');">
+          <button type="submit" class="btn btn-danger btn-sm" style="width: 100%;">
+            🗑️ Delete Issue Report
+          </button>
+        </form>
+      </div>
+    {% endif %}
+
+    <!-- Report Summary Card -->
+    <div class="detail-sidebar-card">
+      <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.6rem;">ℹ️ Report Metadata</h4>
+      <ul style="list-style: none; font-size: 0.85rem; color: var(--text-muted); line-height: 1.9;">
+        <li><strong>Issue ID:</strong> #{{ issue.id }}</li>
+        <li><strong>Category:</strong> {{ issue.category }}</li>
+        <li><strong>Reported By:</strong> {{ issue.reporter_name }} (@{{ issue.reporter_username }})</li>
+        <li><strong>Status:</strong> {{ issue.status }}</li>
+        <li><strong>Upvotes:</strong> {{ issue.upvotes }}</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if issue.latitude and issue.longitude %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const lat = {{ issue.latitude }};
+    const lng = {{ issue.longitude }};
+
+    const map = L.map("issue-map").setView([lat, lng], 14);
+
+    // Dark Matter tile layer
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19
+    }).addTo(map);
+
+    // Marker pin
+    const marker = L.marker([lat, lng]).addTo(map);
+    marker.bindPopup("<b>{{ issue.title|escape }}</b><br>{{ issue.location|escape }}").openPopup();
+  });
+</script>
+{% endif %}
+{% endblock %}

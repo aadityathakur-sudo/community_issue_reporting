@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Public Feed - CivicPulse Community Tracker{% endblock %}
+
+{% block content %}
+  <!-- Hero Section with Civic Impact Metrics -->
+  <section class="hero-section">
+    <h1 class="hero-title">Report. Upvote. Resolve.</h1>
+    <p class="hero-subtitle">
+      A transparent civic portal empowering citizens to report local issues and municipal authorities to prioritize repairs based on verified community feedback.
+    </p>
+
+    <div class="hero-actions">
+      <a href="{{ url_for('report_issue') }}" class="btn btn-primary">+ Report a Local Issue</a>
+      <a href="#feed" class="btn btn-secondary">Browse Public Reports</a>
+    </div>
+
+    <!-- Live Counter Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ total_issues }}</div>
+        <div class="stat-label">Total Reports</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: var(--status-pending-text);">{{ pending_count }}</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: var(--status-progress-text);">{{ in_progress_count }}</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color: var(--status-resolved-text);">{{ resolved_count }}</div>
+        <div class="stat-label">Resolved</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feed Search & Filter Toolbar -->
+  <section id="feed" class="feed-controls">
+    <form method="GET" action="{{ url_for('index') }}" class="filter-form">
+      <!-- Search Input -->
+      <input 
+        type="text" 
+        name="q" 
+        class="form-control search-input" 
+        placeholder="🔍 Search issues by keyword, road, or area..." 
+        value="{{ search_query }}"
+      >
+
+      <!-- Category Dropdown -->
+      <select name="category" class="form-control">
+        <option value="">All Categories</option>
+        {% for cat in CATEGORIES %}
+          <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Status Dropdown -->
+      <select name="status" class="form-control">
+        <option value="">All Statuses</option>
+        {% for st in STATUS_CHOICES %}
+          <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Sort Dropdown -->
+      <select name="sort" class="form-control">
+        <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>🕒 Newest Reports</option>
+        <option value="upvotes" {% if sort_by == 'upvotes' %}selected{% endif %}>🔥 Most Upvoted</option>
+      </select>
+
+      <button type="submit" class="btn btn-accent">Filter</button>
+      {% if search_query or category_filter or status_filter or sort_by != 'recent' %}
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Reset</a>
+      {% endif %}
+    </form>
+
+    <!-- Quick Category Filter Chips -->
+    <div class="category-chips">
+      <span style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">Quick Filters:</span>
+      <a href="{{ url_for('index', sort=sort_by) }}" class="chip {% if not category_filter %}active{% endif %}">All</a>
+      {% for cat in CATEGORIES %}
+        <a href="{{ url_for('index', category=cat, sort=sort_by) }}" class="chip {% if category_filter == cat %}active{% endif %}">
+          {{ cat }}
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Public Issues Grid -->
+  <section class="issues-grid">
+    {% if issues %}
+      {% for issue in issues %}
+        <article class="issue-card">
+          <!-- Thumbnail Image -->
+          <div class="card-image-wrap">
+            {% if issue.image_filename %}
+              <img 
+                src="{{ url_for('static', filename='uploads/' + issue.image_filename) }}" 
+                alt="{{ issue.title }}" 
+                class="card-image"
+                loading="lazy"
+              >
+            {% else %}
+              <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.85rem; background: #161a22;">
+                📷 No photo attached
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="card-body">
+            <!-- Meta row: Category & Status Badge -->
+            <div class="card-meta">
+              <span class="category-tag">{{ issue.category }}</span>
+              <span class="status-badge 
+                {% if issue.status == 'Pending' %}status-pending
+                {% elif issue.status == 'In Progress' %}status-in-progress
+                {% elif issue.status == 'Resolved' %}status-resolved
+                {% endif %}">
+                {{ issue.status }}
+              </span>
+            </div>
+
+            <!-- Title -->
+            <h3 class="card-title">
+              <a href="{{ url_for('issue_detail', issue_id=issue.id) }}">{{ issue.title }}</a>
+            </h3>
+
+            <!-- Short Description -->
+            <p class="card-desc">{{ issue.description }}</p>
+
+            <!-- Location -->
+            <div class="card-location">
+              <span>📍 {{ issue.location }}</span>
+            </div>
+
+            <!-- Card Bottom Bar: Upvote & Comments -->
+            <div class="card-footer">
+              <form action="{{ url_for('upvote_issue', issue_id=issue.id) }}" method="POST" style="margin: 0;">
+                <button 
+                  type="submit" 
+                  class="upvote-btn {% if issue.id in user_upvoted_ids %}has-voted{% endif %}"
+                  title="Endorse this issue to increase municipal priority"
+                >
+                  ▲ <strong>{{ issue.upvotes }}</strong> 
+                  {% if issue.id in user_upvoted_ids %}
+                    <span>(Upvoted)</span>
+                  {% else %}
+                    <span>Upvote</span>
+                  {% endif %}
+                </button>
+              </form>
+
+              <a href="{{ url_for('issue_detail', issue_id=issue.id) }}" class="comment-count-badge">
+                💬 {{ issue.comment_count }} comments &bull; View &rarr;
+              </a>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <h3>No civic issues found matching your filters</h3>
+        <p>Try searching for different terms or reset your filters to see all community reports.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Reset All Filters</a>
+        <a href="{{ url_for('report_issue') }}" class="btn btn-primary" style="margin-left: 0.5rem;">+ Report New Issue</a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

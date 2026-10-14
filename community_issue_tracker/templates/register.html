@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Register Account - CivicPulse{% endblock %}
+
+{% block content %}
+<div class="form-card">
+  <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.4rem; text-align: center;">
+    👤 Register for CivicPulse
+  </h2>
+  <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; text-align: center;">
+    Join your neighborhood platform to report hazards and track city improvements.
+  </p>
+
+  <form method="POST" action="{{ url_for('register') }}">
+    <div class="form-group">
+      <label for="full_name">Full Name</label>
+      <input 
+        type="text" 
+        id="full_name" 
+        name="full_name" 
+        class="form-control" 
+        placeholder="e.g. Ramesh Kumar"
+        required 
+        autofocus
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input 
+        type="text" 
+        id="username" 
+        name="username" 
+        class="form-control" 
+        placeholder="e.g. ramesh_k"
+        required
+      >
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-control" 
+          placeholder="Create password"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="confirm_password">Confirm Password</label>
+        <input 
+          type="password" 
+          id="confirm_password" 
+          name="confirm_password" 
+          class="form-control" 
+          placeholder="Repeat password"
+          required
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="role">Register As:</label>
+      <select id="role" name="role" class="form-control">
+        <option value="citizen" selected>Citizen / Resident (Report & Upvote Issues)</option>
+        <option value="admin">Municipal Authority / Administrator (Manage & Resolve Statuses)</option>
+      </select>
+      <div class="form-hint">Tip: For testing teacher grading, you can create admin accounts directly here.</div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.8rem;">
+      Create Account
+    </button>
+  </form>
+
+  <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+    Already have an account? <a href="{{ url_for('login') }}">Sign in here</a>
+  </div>
+</div>
+{% endblock %}
